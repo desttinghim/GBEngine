@@ -28,6 +28,10 @@ class GBEngine {
 	public var colors : Array<Color>;
 
 	public var imageEdit : Bool;
+	public var isMouseDown : Bool = false;
+	// public var edits : Array<{x:Int, y:Int}> = [];
+	public var lines : Array<Array<{x:Int, y:Int}>> = [[]];
+	public var currentLine : Int = 0;
 
 	public function new() {
 		System.notifyOnRender(render);
@@ -35,7 +39,7 @@ class GBEngine {
 
 		// Toggle editing of image by pressing 1
 		Keyboard.get().notify( onKeyDown, onKeyUp);
-		Mouse.get().notify( onMouseDown, onMouseUp );
+		Mouse.get().notify( onMouseDown, onMouseUp, onMouseMove, onMouseWheel );
 
 		// 4 colors from GB
 		colors = [
@@ -97,17 +101,37 @@ class GBEngine {
 		}
 	}
 
-	// figure out what the three ints this should take should be
-	public function onMouseDown() {
 
+	//MOUSE STUFF
+	public function onMouseDown(button:Int, x:Int, y:Int) {
+		if(imageEdit) {
+			isMouseDown = true;
+			lines.push([{x: x, y: y}]);
+			currentLine = lines.length-1;
+			// edits.push({x: x, y: y});
+		}
 	}
 
-	public function onMouseUp() {
+	public function onMouseUp(button:Int, x:Int, y:Int) {
+		if(imageEdit) {
+			isMouseDown = false;
+		}
+	}
+
+	public function onMouseMove(x:Int, y:Int, moveX:Int, moveY:Int) {
+		if(imageEdit && isMouseDown) {
+			lines[currentLine].push({x: x, y: y});
+			// edits.push({x: x, y: y});
+		}
+	}
+
+	public function onMouseWheel(delta:Int) {
 
 	}
 
 	public function update(): Void {
 		if(imageEdit) {
+
 		}
 		else if(interp.variables.get("_update") != null) {
 			interp.variables.get("_update")();
@@ -116,9 +140,30 @@ class GBEngine {
 
 	public function render(framebuffer: Framebuffer): Void {
 
+		if(imageEdit) {
+			var prevEdit = null;
+			for(edit in lines[currentLine]) {
+				var x = Scaler.transformX(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
+				var y = Scaler.transformY(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
+				var x1 = x;
+				var y1 = y;
+				if(prevEdit != null) {
+					x1 = prevEdit.x;
+					y1 = prevEdit.y;
+				}
+				spriteSheet.g2.begin(false);
+				spriteSheet.g2.color = colors[3];
+				spriteSheet.g2.drawLine(x, y, x1, y1);
+				spriteSheet.g2.end();
+				prevEdit = {x: x, y: y};
+			}
+			lines[currentLine] = [];
+		}
+
 		backBuffer.g2.begin();
-		if(imageEdit)
+		if(imageEdit) {
 			backBuffer.g2.drawImage(spriteSheet, 0, 0);
+		}
 		else if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
 		backBuffer.g2.end();
