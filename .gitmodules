@@ -1,9 +1,6 @@
 [submodule "kha"]
 	path = kha
 	url = https://github.com/KTXSoftware/kha
-[submodule "BitmapText"]
-	path = BitmapText
-	url = https://github.com/RafaelOliveira/BitmapText
 [submodule "Libraries/BitmapText"]
 	path = Libraries/BitmapText
 	url = https://github.com/RafaelOliveira/BitmapText
