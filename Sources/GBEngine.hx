@@ -11,6 +11,7 @@ import kha.Scaler;
 import kha.Color;
 import kha.Assets;
 import kha.Font;
+import kha.Storage;
 
 import hscript.Parser;
 import hscript.Interp;
@@ -39,6 +40,7 @@ class GBEngine {
 	var drawFont : Font;
 	var codeImages : Array<BitmapText>;
 	var codeCursor : {line:Int, col:Int, blink:Int};
+	var ctrlPressed = false;
 
 	public function new() {
 		Assets.loadEverything(init);
@@ -79,19 +81,22 @@ class GBEngine {
 
 		// running script
 		parser = new Parser();
-		code = ["function _update() {}", "function _render() {}"];
-// 		code = "var i = 0;
-// var a = 0;
-// function _update() {
-// 	a++;
-// 	if( a % 10 == 0)
-// 		i++;
-// }
-// function _render() {
-// 	clr();
-// 	line(32, 32, 64, 64);
-// 	spr( i % 2, 40, 32);
-// }";
+		// code = ["function _update() {}", "function _render() {}"];
+		code = "// test
+var i = 0;
+var a = 0;
+function _update() 
+{
+a++;
+if( a % 10 == 0)
+i++;
+}
+function _render() 
+{
+clr();
+line(32, 32, 64, 64);
+spr( i % 2, 40, 32);
+}".split("\n");
 
 		BitmapText.loadFont('PressStart2P');
 		codeImages = [];
@@ -103,8 +108,6 @@ class GBEngine {
 			col: code[code.length-1].length-1,
 			blink: 0
 		};
-
-		var ast = parser.parseString(code.join(" "));
 		
 		// interpreting script...
 		interp = new Interp();
@@ -114,32 +117,97 @@ class GBEngine {
 		interp.variables.set("rect", rect);
 		interp.variables.set("str", str);
 		interp.variables.set("clr", clr);
+
+		reset();
+	}
+
+	public function reset() {
+		var ast = parser.parseString(code.join(" " ));
 		interp.execute(ast);
 	}
 
+	public function save() {
+		var name = "";
+		if(code[0].charAt(0) == "/" && code[0].charAt(1) == "/") {
+			name = code[0].substr(2);
+		}
+		var file = Storage.namedFile(name);
+		file.writeString(code.join("\n"));
+		trace(file.readString());
+	}
+
 	public function onKeyDown( key:Key, char:String ) {
-		if(codeEdit) {
-			if(key == UP) {
-				if(codeCursor.line > 0) codeCursor.line--;
+		if(!codeEdit || ctrlPressed) {
+			switch(char) {
+				case '1': codeEdit = !codeEdit;
+				case '2': imageEdit = !imageEdit;
+				case 'r': reset();
+				case 's': save();
+				default: {};
 			}
-			if(key == DOWN) {
-				if(codeCursor.line < code.length-1) codeCursor.line++;
+		}
+		else if(codeEdit) {
+			switch(key) {
+				case UP: {
+					if(codeCursor.line > 0) {
+						codeCursor.line--;
+						if(codeCursor.col > code[codeCursor.line].length) {
+							codeCursor.col = code[codeCursor.line].length;
+						}
+					}
+				}
+				case DOWN: {
+					if(codeCursor.line < code.length-1) {
+						codeCursor.line++;
+						if(codeCursor.col > code[codeCursor.line].length) {
+							codeCursor.col = code[codeCursor.line].length;
+						}
+					}
+				}
+				case LEFT: {
+					codeCursor.col--;
+					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				}
+				case RIGHT: {
+					codeCursor.col++;
+					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				}
+				case BACKSPACE: {
+					var s = spliceStr(code[codeCursor.line], codeCursor.col);
+					s[0] = s[0].substr(0, s[0].length-1);
+					code[codeCursor.line] = s[0] + s[1];
+					codeImages[codeCursor.line].text = code[codeCursor.line];
+					codeImages[codeCursor.line].update();
+
+					codeCursor.col--;
+					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				}
+				default: {
+					var s = spliceStr(code[codeCursor.line], codeCursor.col);
+					s[0] += char.toLowerCase();
+					code[codeCursor.line] = s[0] + s[1];
+					codeImages[codeCursor.line].text = code[codeCursor.line];
+					codeImages[codeCursor.line].update();
+
+					codeCursor.col++;
+				}
 			}
-			if(key == LEFT) {
-				if(codeCursor.col > 0) codeCursor.col--;
-			}
-			if(key == RIGHT) {
-				if(codeCursor.col < code[codeCursor.line].length-1) codeCursor.col++;
-			}
+		}
+		if(key == CTRL) {
+			ctrlPressed = true;
 		}
 	}
 
+	function spliceStr(s:String, pos:Int):Array<String> {
+		return [
+			s.substr(0, pos),
+			s.substr(pos)
+		];
+	}
+
 	public function onKeyUp( key:Key, char:String ) {
-		if(key == TAB) {
-			imageEdit = !imageEdit;
-		}
-		if(key == ENTER) {
-			codeEdit = !codeEdit;
+		if(key == CTRL) {
+			ctrlPressed = false;
 		}
 	}
 
