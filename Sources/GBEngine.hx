@@ -1,7 +1,6 @@
 package;
 
 import kha.Framebuffer;
-import kha.Scheduler;
 import kha.System;
 import kha.Image;
 import kha.input.Mouse;
@@ -9,85 +8,36 @@ import kha.input.Keyboard;
 import kha.Key;
 import kha.Scaler;
 import kha.Color;
-import kha.Assets;
 import kha.Storage;
 
 import hscript.Parser;
 import hscript.Interp;
 
-
-enum State {
-	GAME; CODE; PIXL; BEEP; TUNE; TILE;
-}
-
-class GBEngine {
-	public var backBuffer : Image;
+class GBEngine implements GBState {
 	public var spriteSheet : Image;
 	public var tileSheet : Image;
-
-	var code : Array<String>;
+	public var code : Array<String>;
 	var parser : Parser;
 	var interp : Interp;
+	var backBuffer : Image;
 
-	public var sw : Int = 160;
-	public var sh : Int = 144;
+	var sw : Int = 160;
+	var sh : Int = 144;
 
 	public var colors : Array<Color>;
 
-	public var state : State = GAME;
-
-	public function new() {
-		Assets.loadEverything(init);
-	}
-
-	public function init() {
-		System.notifyOnRender(render);
-		Scheduler.addTimeTask(update, 0, 1 / 60);
-
+	public function new(code:String, spriteSheet:Image, backBuffer:Image) {
 		// Toggle editing of image by pressing 1
 		Keyboard.get().notify( onKeyDown, onKeyUp);
 		Mouse.get().notify( onMouseDown, onMouseUp, onMouseMove, onMouseWheel );
 
-		// 4 colors from GB
-		colors = [
-			Color.fromBytes(155, 188, 15),
-			Color.fromBytes(139, 172, 15),
-			Color.fromBytes(48, 98, 48),
-			Color.fromBytes(15, 56, 15)
-		];
-
 		// backBuffer of 160 x 144 to match GB resolution
-		backBuffer = Image.createRenderTarget(sw, sh);
-
-		spriteSheet = Image.createRenderTarget(256, 256);
-		spriteSheet.g2.begin();
-		spriteSheet.g2.color = colors[0];
-		spriteSheet.g2.fillRect(0,0,128,128);
-		spriteSheet.g2.color = colors[3];
-		spriteSheet.g2.drawRect(1, 1, 7, 7, 1);
-		spriteSheet.g2.drawLine(9, 1, 14, 8);
-		spriteSheet.g2.drawLine(9, 1, 9, 8);
-		spriteSheet.g2.drawLine(9, 8, 14, 8);
-		spriteSheet.g2.end();
+		this.spriteSheet = spriteSheet;
+		this.code = code.split("\n");
+		this.backBuffer = backBuffer;
 
 		// running script
 		parser = new Parser();
-		// code = ["function _update() {}", "function _render() {}"];
-		code = "// test
-var i = 0;
-var a = 0;
-function _update() 
-{
-a++;
-if( a % 10 == 0)
-i++;
-}
-function _render() 
-{
-clr();
-line(32, 32, 64, 64);
-spr( i % 2, 40, 32);
-}".split("\n");
 		
 		// interpreting script...
 		interp = new Interp();
@@ -119,34 +69,10 @@ spr( i % 2, 40, 32);
 
 	
 	public function onKeyDown( key:Key, char:String ) {
-		// add conditional modifier
-		switch(char) {
-			case '1': state = CODE;
-			case '2': state = PIXL;
-			case 'r': reset();
-			case 's': save();
-			default: {};
-		}
+
 	}
 
 	public function onKeyUp( key:Key, char:String ) {
-
-	}
-
-	//MOUSE STUFF
-	public function onMouseDown(button:Int, x:Int, y:Int) {
-		
-	}
-
-	public function onMouseUp(button:Int, x:Int, y:Int) {
-		
-	}
-
-	public function onMouseMove(x:Int, y:Int, moveX:Int, moveY:Int) {
-		
-	}
-
-	public function onMouseWheel(delta:Int) {
 
 	}
 
@@ -157,16 +83,10 @@ spr( i % 2, 40, 32);
 	}
 
 	public function render(framebuffer: Framebuffer): Void {
-
 		backBuffer.g2.begin();
 		if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
 		backBuffer.g2.end();
-
-		framebuffer.g2.begin();
-		framebuffer.g2.clear();
-		Scaler.scale(backBuffer, framebuffer, System.screenRotation);
-		framebuffer.g2.end();
 	}
 
 	// API functions
