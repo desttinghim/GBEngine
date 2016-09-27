@@ -10,19 +10,18 @@ import kha.Key;
 import kha.Scaler;
 import kha.Color;
 import kha.Assets;
-import kha.Font;
 import kha.Storage;
 
 import hscript.Parser;
 import hscript.Interp;
 
-import bitmapText.BitmapText;
 
 class GBEngine {
 	public var backBuffer : Image;
 	public var spriteSheet : Image;
 	public var tileSheet : Image;
 
+	var code : Array<String>;
 	var parser : Parser;
 	var interp : Interp;
 
@@ -34,13 +33,6 @@ class GBEngine {
 	public var imageEdit : Bool;
 	public var isMouseDown : Bool = false;
 	public var edits : Array<{x:Int, y:Int}> = [];
-
-	public var codeEdit : Bool = false;
-	var code : Array<String>;
-	var drawFont : Font;
-	var codeImages : Array<BitmapText>;
-	var codeCursor : {line:Int, col:Int, blink:Int};
-	var ctrlPressed = false;
 
 	public function new() {
 		Assets.loadEverything(init);
@@ -64,9 +56,6 @@ class GBEngine {
 
 		// backBuffer of 160 x 144 to match GB resolution
 		backBuffer = Image.createRenderTarget(sw, sh);
-		// drawFont = Assets.fonts.Sparkly_Font;
-		// backBuffer.g2.fontSize = 2;
-		// backBuffer.g2.font = drawFont;
 
 		spriteSheet = Image.createRenderTarget(256, 256);
 		spriteSheet.g2.begin();
@@ -97,17 +86,6 @@ clr();
 line(32, 32, 64, 64);
 spr( i % 2, 40, 32);
 }".split("\n");
-
-		BitmapText.loadFont('PressStart2P');
-		codeImages = [];
-		for(loc in code) {
-			codeImages.push(new BitmapText(loc, 'PressStart2P', sw, sh));
-		}
-		codeCursor = {
-			line: code.length-1,
-			col: code[code.length-1].length-1,
-			blink: 0
-		};
 		
 		// interpreting script...
 		interp = new Interp();
@@ -136,6 +114,7 @@ spr( i % 2, 40, 32);
 		trace(file.readString());
 	}
 
+	
 	public function onKeyDown( key:Key, char:String ) {
 		if(!codeEdit || ctrlPressed) {
 			switch(char) {
@@ -146,71 +125,7 @@ spr( i % 2, 40, 32);
 				default: {};
 			}
 		}
-		else if(codeEdit) {
-			switch(key) {
-				case UP: {
-					if(codeCursor.line > 0) {
-						codeCursor.line--;
-						if(codeCursor.col > code[codeCursor.line].length) {
-							codeCursor.col = code[codeCursor.line].length;
-						}
-					}
-				}
-				case DOWN: {
-					if(codeCursor.line < code.length-1) {
-						codeCursor.line++;
-						if(codeCursor.col > code[codeCursor.line].length) {
-							codeCursor.col = code[codeCursor.line].length;
-						}
-					}
-				}
-				case LEFT: {
-					codeCursor.col--;
-					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
-				}
-				case RIGHT: {
-					codeCursor.col++;
-					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
-				}
-				case BACKSPACE: {
-					var s = spliceStr(code[codeCursor.line], codeCursor.col);
-					s[0] = s[0].substr(0, s[0].length-1);
-					code[codeCursor.line] = s[0] + s[1];
-					codeImages[codeCursor.line].text = code[codeCursor.line];
-					codeImages[codeCursor.line].update();
-
-					codeCursor.col--;
-					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
-				}
-				default: {
-					var s = spliceStr(code[codeCursor.line], codeCursor.col);
-					s[0] += char.toLowerCase();
-					code[codeCursor.line] = s[0] + s[1];
-					codeImages[codeCursor.line].text = code[codeCursor.line];
-					codeImages[codeCursor.line].update();
-
-					codeCursor.col++;
-				}
-			}
-		}
-		if(key == CTRL) {
-			ctrlPressed = true;
-		}
 	}
-
-	function spliceStr(s:String, pos:Int):Array<String> {
-		return [
-			s.substr(0, pos),
-			s.substr(pos)
-		];
-	}
-
-	public function onKeyUp( key:Key, char:String ) {
-		if(key == CTRL) {
-			ctrlPressed = false;
-		}
-	}
-
 
 	//MOUSE STUFF
 	public function onMouseDown(button:Int, x:Int, y:Int) {
@@ -274,17 +189,7 @@ spr( i % 2, 40, 32);
 		if(imageEdit) {
 			backBuffer.g2.color = Color.White;
 			backBuffer.g2.drawImage(spriteSheet, 0, 0);
-		} else if(codeEdit) {
-			for(i in 0...codeImages.length-1) {
-				backBuffer.g2.color = colors[2];
-				backBuffer.g2.drawImage(codeImages[i].image, 0, i * 8);
-				codeCursor.blink++;
-				backBuffer.g2.color = colors[2];
-				if(codeCursor.blink % 100 < 50) {
-					backBuffer.g2.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
-				}
-			}
-		}
+		} 
 		else if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
 		backBuffer.g2.end();
