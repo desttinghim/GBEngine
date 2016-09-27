@@ -9,16 +9,19 @@ import kha.input.Keyboard;
 import kha.Key;
 import kha.Scaler;
 import kha.Color;
+import kha.Assets;
+import kha.Font;
 
 import hscript.Parser;
 import hscript.Interp;
+
+import bitmapText.BitmapText;
 
 class GBEngine {
 	public var backBuffer : Image;
 	public var spriteSheet : Image;
 	public var tileSheet : Image;
 
-	var code : String;
 	var parser : Parser;
 	var interp : Interp;
 
@@ -31,7 +34,16 @@ class GBEngine {
 	public var isMouseDown : Bool = false;
 	public var edits : Array<{x:Int, y:Int}> = [];
 
+	public var codeEdit : Bool = false;
+	var code : String;
+	var drawFont : Font;
+	var codeImage : BitmapText;
+
 	public function new() {
+		Assets.loadEverything(init);
+	}
+
+	public function init() {
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
 
@@ -49,6 +61,9 @@ class GBEngine {
 
 		// backBuffer of 160 x 144 to match GB resolution
 		backBuffer = Image.createRenderTarget(sw, sh);
+		// drawFont = Assets.fonts.Sparkly_Font;
+		// backBuffer.g2.fontSize = 2;
+		// backBuffer.g2.font = drawFont;
 
 		spriteSheet = Image.createRenderTarget(64, 64);
 		spriteSheet.g2.begin();
@@ -64,18 +79,23 @@ class GBEngine {
 		// running script
 		parser = new Parser();
 		code = "
-		var i = 0;
-		var a = 0;
-		function _update() {
-			a++;
-			if( a % 10 == 0)
-				i++;
-		}
-		function _render() {
-			clr();
-			line(32, 32, 64, 64);
-			spr( i % 2, 40, 32);
-		}";
+var i = 0;
+var a = 0;
+function _update() {
+	a++;
+	if( a % 10 == 0)
+		i++;
+}
+function _render() {
+	clr();
+	line(32, 32, 64, 64);
+	spr( i % 2, 40, 32);
+}";
+
+		BitmapText.loadFont('PressStart2P');
+		codeImage = new BitmapText(code, 'PressStart2P', sw, sh);
+
+
 		var ast = parser.parseString(code);
 		
 		// interpreting script...
@@ -96,6 +116,9 @@ class GBEngine {
 	public function onKeyUp( key:Key, char:String ) {
 		if(key == TAB) {
 			imageEdit = !imageEdit;
+		}
+		if(key == ENTER) {
+			codeEdit = !codeEdit;
 		}
 	}
 
@@ -137,27 +160,33 @@ class GBEngine {
 
 		if(imageEdit) {
 			var prevEdit = null;
+			spriteSheet.g2.begin(false);
 			for(edit in edits) {
 				var x = Scaler.transformX(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
 				var y = Scaler.transformY(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
 				var x1 = x;
 				var y1 = y;
+				spriteSheet.g2.color = colors[3];
 				if(prevEdit != null) {
 					x1 = prevEdit.x;
 					y1 = prevEdit.y;
+					spriteSheet.g2.drawLine(x, y, x1, y1);
 				}
-				spriteSheet.g2.begin(false);
-				spriteSheet.g2.color = colors[3];
-				spriteSheet.g2.drawLine(x, y, x1, y1);
-				spriteSheet.g2.end();
+				else {
+					spriteSheet.g2.fillRect(x, y, 1, 1);
+				}
 				prevEdit = {x: x, y: y};
 			}
 			edits = [];
+			spriteSheet.g2.end();
 		}
 
 		backBuffer.g2.begin();
 		if(imageEdit) {
+			backBuffer.g2.color = Color.White;
 			backBuffer.g2.drawImage(spriteSheet, 0, 0);
+		} else if(codeEdit) {
+			backBuffer.g2.drawImage(codeImage.image, 0, 0);
 		}
 		else if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
@@ -172,6 +201,7 @@ class GBEngine {
 	// API functions
 
 	public function spr(id:Int, x:Int, y:Int) {
+		backBuffer.g2.color = Color.White;
 		if( id < 0 || id > 127 ) {
 			trace('ID out of bounds');
 			return;
