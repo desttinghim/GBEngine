@@ -16,6 +16,10 @@ import hscript.Parser;
 import hscript.Interp;
 
 
+enum State {
+	GAME; CODE; PIXL; BEEP; TUNE; TILE;
+}
+
 class GBEngine {
 	public var backBuffer : Image;
 	public var spriteSheet : Image;
@@ -30,9 +34,7 @@ class GBEngine {
 
 	public var colors : Array<Color>;
 
-	public var imageEdit : Bool;
-	public var isMouseDown : Bool = false;
-	public var edits : Array<{x:Int, y:Int}> = [];
+	public var state : State = GAME;
 
 	public function new() {
 		Assets.loadEverything(init);
@@ -100,7 +102,8 @@ spr( i % 2, 40, 32);
 	}
 
 	public function reset() {
-		var ast = parser.parseString(code.join(" " ));
+		trace("Resetting...");
+		var ast = parser.parseString(code.join("\n"));
 		interp.execute(ast);
 	}
 
@@ -116,35 +119,31 @@ spr( i % 2, 40, 32);
 
 	
 	public function onKeyDown( key:Key, char:String ) {
-		if(!codeEdit || ctrlPressed) {
-			switch(char) {
-				case '1': codeEdit = !codeEdit;
-				case '2': imageEdit = !imageEdit;
-				case 'r': reset();
-				case 's': save();
-				default: {};
-			}
+		// add conditional modifier
+		switch(char) {
+			case '1': state = CODE;
+			case '2': state = PIXL;
+			case 'r': reset();
+			case 's': save();
+			default: {};
 		}
+	}
+
+	public function onKeyUp( key:Key, char:String ) {
+
 	}
 
 	//MOUSE STUFF
 	public function onMouseDown(button:Int, x:Int, y:Int) {
-		if(imageEdit) {
-			isMouseDown = true;
-			edits.push({x: x, y: y});
-		}
+		
 	}
 
 	public function onMouseUp(button:Int, x:Int, y:Int) {
-		if(imageEdit) {
-			isMouseDown = false;
-		}
+		
 	}
 
 	public function onMouseMove(x:Int, y:Int, moveX:Int, moveY:Int) {
-		if(imageEdit && isMouseDown) {
-			edits.push({x: x, y: y});
-		}
+		
 	}
 
 	public function onMouseWheel(delta:Int) {
@@ -152,45 +151,15 @@ spr( i % 2, 40, 32);
 	}
 
 	public function update(): Void {
-		if(imageEdit) {
-
-		}
-		else if(interp.variables.get("_update") != null) {
+		if(interp.variables.get("_update") != null) {
 			interp.variables.get("_update")();
 		}
 	}
 
 	public function render(framebuffer: Framebuffer): Void {
 
-		if(imageEdit) {
-			var prevEdit = null;
-			spriteSheet.g2.begin(false);
-			for(edit in edits) {
-				var x = Scaler.transformX(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
-				var y = Scaler.transformY(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
-				var x1 = x;
-				var y1 = y;
-				spriteSheet.g2.color = colors[3];
-				if(prevEdit != null) {
-					x1 = prevEdit.x;
-					y1 = prevEdit.y;
-					spriteSheet.g2.drawLine(x, y, x1, y1);
-				}
-				else {
-					spriteSheet.g2.fillRect(x, y, 1, 1);
-				}
-				prevEdit = {x: x, y: y};
-			}
-			edits = [];
-			spriteSheet.g2.end();
-		}
-
 		backBuffer.g2.begin();
-		if(imageEdit) {
-			backBuffer.g2.color = Color.White;
-			backBuffer.g2.drawImage(spriteSheet, 0, 0);
-		} 
-		else if(interp.variables.get("_render") != null)
+		if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
 		backBuffer.g2.end();
 

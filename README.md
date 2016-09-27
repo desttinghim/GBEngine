@@ -11,3 +11,4 @@ This is a breakdown of the source files, describing what happens in each.
 * GBPixl.hx is the image editor (TODO)
 * GBBeep.hx is the sound fx editor (TODO)
 * GBTune.hx is the music editor (TODO)
+* GBTile.hx is the map editor (TODO)
