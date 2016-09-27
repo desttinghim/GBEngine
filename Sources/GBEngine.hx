@@ -29,9 +29,7 @@ class GBEngine {
 
 	public var imageEdit : Bool;
 	public var isMouseDown : Bool = false;
-	// public var edits : Array<{x:Int, y:Int}> = [];
-	public var lines : Array<Array<{x:Int, y:Int}>> = [[]];
-	public var currentLine : Int = 0;
+	public var edits : Array<{x:Int, y:Int}> = [];
 
 	public function new() {
 		System.notifyOnRender(render);
@@ -106,9 +104,7 @@ class GBEngine {
 	public function onMouseDown(button:Int, x:Int, y:Int) {
 		if(imageEdit) {
 			isMouseDown = true;
-			lines.push([{x: x, y: y}]);
-			currentLine = lines.length-1;
-			// edits.push({x: x, y: y});
+			edits.push({x: x, y: y});
 		}
 	}
 
@@ -120,8 +116,7 @@ class GBEngine {
 
 	public function onMouseMove(x:Int, y:Int, moveX:Int, moveY:Int) {
 		if(imageEdit && isMouseDown) {
-			lines[currentLine].push({x: x, y: y});
-			// edits.push({x: x, y: y});
+			edits.push({x: x, y: y});
 		}
 	}
 
@@ -142,7 +137,7 @@ class GBEngine {
 
 		if(imageEdit) {
 			var prevEdit = null;
-			for(edit in lines[currentLine]) {
+			for(edit in edits) {
 				var x = Scaler.transformX(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
 				var y = Scaler.transformY(edit.x, edit.y, backBuffer, framebuffer, System.screenRotation);
 				var x1 = x;
@@ -157,7 +152,7 @@ class GBEngine {
 				spriteSheet.g2.end();
 				prevEdit = {x: x, y: y};
 			}
-			lines[currentLine] = [];
+			edits = [];
 		}
 
 		backBuffer.g2.begin();
