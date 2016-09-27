@@ -1,4 +1,4 @@
-# Zepto 8
+# Zepto 2
 
 A fantasy console like the Pico 8, but based around the restrictions of the original GameBoy. With the addition of a keyboard and mouse, that is. This is still a work in progress, so I may eventually add a mode that can work *entirely* with the input and output restrictions of the GameBoy.
 

@@ -4,3 +4,6 @@
 [submodule "Libraries/BitmapText"]
 	path = Libraries/BitmapText
 	url = https://github.com/RafaelOliveira/BitmapText
+[submodule "Libraries/hscript"]
+	path = Libraries/hscript
+	url = https://github.com/HaxeFoundation/hscript
