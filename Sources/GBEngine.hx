@@ -35,9 +35,10 @@ class GBEngine {
 	public var edits : Array<{x:Int, y:Int}> = [];
 
 	public var codeEdit : Bool = false;
-	var code : String;
+	var code : Array<String>;
 	var drawFont : Font;
-	var codeImage : BitmapText;
+	var codeImages : Array<BitmapText>;
+	var codeCursor : {line:Int, col:Int, blink:Int};
 
 	public function new() {
 		Assets.loadEverything(init);
@@ -65,7 +66,7 @@ class GBEngine {
 		// backBuffer.g2.fontSize = 2;
 		// backBuffer.g2.font = drawFont;
 
-		spriteSheet = Image.createRenderTarget(64, 64);
+		spriteSheet = Image.createRenderTarget(256, 256);
 		spriteSheet.g2.begin();
 		spriteSheet.g2.color = colors[0];
 		spriteSheet.g2.fillRect(0,0,128,128);
@@ -78,25 +79,32 @@ class GBEngine {
 
 		// running script
 		parser = new Parser();
-		code = "
-var i = 0;
-var a = 0;
-function _update() {
-	a++;
-	if( a % 10 == 0)
-		i++;
-}
-function _render() {
-	clr();
-	line(32, 32, 64, 64);
-	spr( i % 2, 40, 32);
-}";
+		code = ["function _update() {}", "function _render() {}"];
+// 		code = "var i = 0;
+// var a = 0;
+// function _update() {
+// 	a++;
+// 	if( a % 10 == 0)
+// 		i++;
+// }
+// function _render() {
+// 	clr();
+// 	line(32, 32, 64, 64);
+// 	spr( i % 2, 40, 32);
+// }";
 
 		BitmapText.loadFont('PressStart2P');
-		codeImage = new BitmapText(code, 'PressStart2P', sw, sh);
+		codeImages = [];
+		for(loc in code) {
+			codeImages.push(new BitmapText(loc, 'PressStart2P', sw, sh));
+		}
+		codeCursor = {
+			line: code.length-1,
+			col: code[code.length-1].length-1,
+			blink: 0
+		};
 
-
-		var ast = parser.parseString(code);
+		var ast = parser.parseString(code.join(" "));
 		
 		// interpreting script...
 		interp = new Interp();
@@ -110,7 +118,20 @@ function _render() {
 	}
 
 	public function onKeyDown( key:Key, char:String ) {
-		
+		if(codeEdit) {
+			if(key == UP) {
+				if(codeCursor.line > 0) codeCursor.line--;
+			}
+			if(key == DOWN) {
+				if(codeCursor.line < code.length-1) codeCursor.line++;
+			}
+			if(key == LEFT) {
+				if(codeCursor.col > 0) codeCursor.col--;
+			}
+			if(key == RIGHT) {
+				if(codeCursor.col < code[codeCursor.line].length-1) codeCursor.col++;
+			}
+		}
 	}
 
 	public function onKeyUp( key:Key, char:String ) {
@@ -186,7 +207,15 @@ function _render() {
 			backBuffer.g2.color = Color.White;
 			backBuffer.g2.drawImage(spriteSheet, 0, 0);
 		} else if(codeEdit) {
-			backBuffer.g2.drawImage(codeImage.image, 0, 0);
+			for(i in 0...codeImages.length-1) {
+				backBuffer.g2.color = colors[2];
+				backBuffer.g2.drawImage(codeImages[i].image, 0, i * 8);
+				codeCursor.blink++;
+				backBuffer.g2.color = colors[2];
+				if(codeCursor.blink % 100 < 50) {
+					backBuffer.g2.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
+				}
+			}
 		}
 		else if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
