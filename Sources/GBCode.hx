@@ -64,13 +64,26 @@ class GBCode implements GBState {
 				moveCursor(1, -s[0].length);
 			}
 			case BACKSPACE: {
-				var s = spliceStr(code[codeCursor.line], codeCursor.col);
-				s[0] = s[0].substr(0, s[0].length-1);
-				code[codeCursor.line] = s[0] + s[1];
-				redrawLine(codeCursor.line);
+				if(codeCursor.col == 0) {
+					var s = code.splice(codeCursor.line, 1);
+					trace(s);
+					moveCursor(-1, 0);
+					moveCursor(0, code[codeCursor.line].length);
+					code[codeCursor.line] + s[0];
 
-				codeCursor.col--;
-				codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+					//TODO: get string stuff working, remove image
+
+					redraw();
+				}
+				else {
+					var s = spliceStr(code[codeCursor.line], codeCursor.col);
+					s[0] = s[0].substr(0, s[0].length-1);
+					code[codeCursor.line] = s[0] + s[1];
+					redrawLine(codeCursor.line);
+
+					codeCursor.col--;
+					codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				}
 			}
 			default: {
 				if(char == '') return;
