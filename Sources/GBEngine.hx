@@ -3,7 +3,7 @@ package;
 import kha.Image;
 import kha.Key;
 import kha.Color;
-import kha.Storage;
+import kha.System;
 
 import hscript.Parser;
 import hscript.Interp;
@@ -17,6 +17,7 @@ class GBEngine implements GBState {
 	var parser : Parser;
 	var interp : Interp;
 	var backBuffer : Image;
+	var lastFrameTime : Float;
 
 	public var colors : Array<Color>;
 
@@ -59,20 +60,15 @@ class GBEngine implements GBState {
 		catch (e:Error) {
 			trace(e);
 		}
-	}
-	
-	public function onKeyDown( key:Key, char:String ) {
-
-	}
-
-	public function onKeyUp( key:Key, char:String ) {
-
+		lastFrameTime = System.time;
 	}
 
 	public function update(): Void {
 		if(interp.variables.get("_update") != null) {
 			interp.variables.get("_update")();
 		}
+
+		lastFrameTime = System.time;
 	}
 
 	public function render(): Void {
@@ -111,5 +107,34 @@ class GBEngine implements GBState {
 
 	public function str(text, x, y) {
 		backBuffer.g2.drawString(text, x, y);
+	}
+
+	public function btn(i:Int) {
+		for(button in GB.buttons) {
+			return isBtnKeyChar(i, button.key, button.char);
+		}
+	}
+
+	public function btnp(i:Int) {
+		for(button in GB.buttons) {
+			if(button.time < lastFrameTime) continue;
+			return isBtnKeyChar(i, button.key, button.char);
+		}
+	}
+
+	public function isBtnKeyChar(i, key:Key, char:String) {
+		return switch[i, key, char] {
+			case [0, LEFT, _]: 	true;
+			case [1, RIGHT, _]: true;
+			case [2, UP, _]: 	true;
+			case [3, DOWN, _]: 	true;
+			case [4, _, 'z']: 	true;
+			case [4, _, 'c']: 	true;
+			case [4, _, 'n']: 	true;
+			case [5, _, 'x']: 	true;
+			case [5, _, 'v']: 	true;
+			case [5, _, 'm']: 	true;
+			default: false;
+		}
 	}
 }
