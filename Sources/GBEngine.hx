@@ -8,6 +8,8 @@ import kha.Storage;
 import hscript.Parser;
 import hscript.Interp;
 
+import haxe.io.Error;
+
 class GBEngine implements GBState {
 	public var spriteSheet : Image;
 	public var tileSheet : Image;
@@ -45,8 +47,18 @@ class GBEngine implements GBState {
 
 	public function reset() {
 		trace("Resetting...");
-		var ast = parser.parseString(code.join("\n"));
-		interp.execute(ast);
+		try {
+			var ast = parser.parseString(code.join("\n"));
+			try {
+				interp.execute(ast);
+			}
+			catch(e:Error) {
+				trace(e);
+			}
+		}
+		catch (e:Error) {
+			trace(e);
+		}
 	}
 	
 	public function onKeyDown( key:Key, char:String ) {
