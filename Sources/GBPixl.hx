@@ -1,6 +1,6 @@
 package;
 
-class GBPixl {
+class GBPixl implements GBState {
 	public var isMouseDown : Bool = false;
 	public var edits : Array<{x:Int, y:Int}> = [];
 
@@ -21,6 +21,10 @@ class GBPixl {
 
 	public function onMouseWheel(delta:Int) {
 
+	}
+
+	public function update() {
+		
 	}
 
 	public function render(graphics:Graphics) {

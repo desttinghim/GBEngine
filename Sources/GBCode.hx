@@ -2,24 +2,29 @@ package;
 
 import kha.Key;
 import kha.Color;
+import kha.Image;
 
 import bitmapText.BitmapText;
 
-class GBCode {
+class GBCode implements GBState {
 	// var codeEdit : Bool = false;
 	var drawFont : Font;
 	var codeImages : Array<BitmapText>;
 	var codeCursor : {line:Int, col:Int, blink:Int};
 	var ctrlPressed = false;
+	var code : Array<String>;
+	var backBuffer : Image;
 
 	public var cursorColor : Color;
 	public var textColor : Color;
 
-	public function new() {
+	public function new(c:String, backBuffer:Image) {
+		this.code = c.split("\n");
+		this.backBuffer = backBuffer;
 		BitmapText.loadFont('PressStart2P');
 		codeImages = [];
 		for(loc in code) {
-			codeImages.push(new BitmapText(loc, 'PressStart2P', sw, sh));
+			codeImages.push(new BitmapText(loc, 'PressStart2P', GB.sw, GB.sh));
 		}
 		codeCursor = {
 			line: code.length-1,
@@ -82,7 +87,9 @@ class GBCode {
 		codeCursor.blink++;
 	}
 
-	public function render(graphics:Graphics) {
+	public function render() {
+		var graphics = backBuffer.g2;
+		graphics.begin();
 		for(i in 0...codeImages.length-1) {
 			graphics.color = cursorColor;
 			graphics.drawImage(codeImages[i].image, 0, i * 8);
@@ -91,6 +98,7 @@ class GBCode {
 				graphics.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
 			}
 		}
+		graphics.end();
 	}
 
 
@@ -110,5 +118,5 @@ class GBCode {
 		codeImages[codeCursor.line].update();
 	}
 
-	function 
+	// function 
 }

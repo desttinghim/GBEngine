@@ -1,12 +1,7 @@
 package;
 
-import kha.Framebuffer;
-import kha.System;
 import kha.Image;
-import kha.input.Mouse;
-import kha.input.Keyboard;
 import kha.Key;
-import kha.Scaler;
 import kha.Color;
 import kha.Storage;
 
@@ -21,15 +16,12 @@ class GBEngine implements GBState {
 	var interp : Interp;
 	var backBuffer : Image;
 
-	var sw : Int = 160;
-	var sh : Int = 144;
-
 	public var colors : Array<Color>;
 
 	public function new(code:String, spriteSheet:Image, backBuffer:Image) {
 		// Toggle editing of image by pressing 1
-		Keyboard.get().notify( onKeyDown, onKeyUp);
-		Mouse.get().notify( onMouseDown, onMouseUp, onMouseMove, onMouseWheel );
+		// Keyboard.get().notify( onKeyDown, onKeyUp);
+		// Mouse.get().notify( onMouseDown, onMouseUp, onMouseMove, onMouseWheel );
 
 		// backBuffer of 160 x 144 to match GB resolution
 		this.spriteSheet = spriteSheet;
@@ -82,7 +74,7 @@ class GBEngine implements GBState {
 		}
 	}
 
-	public function render(framebuffer: Framebuffer): Void {
+	public function render(): Void {
 		backBuffer.g2.begin();
 		if(interp.variables.get("_render") != null)
 			interp.variables.get("_render")();
@@ -113,7 +105,7 @@ class GBEngine implements GBState {
 	public function clr() {
 		backBuffer.g2.color = colors[0];
 		backBuffer.g2.clear();
-		backBuffer.g2.fillRect(0,0,sw,sh);
+		backBuffer.g2.fillRect(0,0,GB.sw,GB.sh);
 	}
 
 	public function str(text, x, y) {

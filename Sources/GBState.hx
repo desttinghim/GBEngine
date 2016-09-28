@@ -1,10 +1,10 @@
 package;
 
-import kha.Graphics;
+import kha.Key;
 
 interface GBState {
-	public function update();
-	public function render(graphics:Graphics);
-	public function onKeyDown(key:Key, char:String);
-	public function onKeyUp(key:Key, char:String);
+	public function update():Void;
+	public function render():Void;
+	public function onKeyDown(key:Key, char:String):Void;
+	public function onKeyUp(key:Key, char:String):Void;
 }

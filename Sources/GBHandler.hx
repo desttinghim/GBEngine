@@ -6,22 +6,33 @@ import kha.Assets;
 import kha.Framebuffer;
 import kha.System;
 import kha.Scheduler;
+import kha.Image;
+import kha.Key;
+import kha.Scaler;
+import kha.Color;
+import kha.input.Keyboard;
 
 class GBHandler {
-	var sw : Int = 160;
-	var sh : Int = 144;
-
 	var backBuffer : Image;
+	var code : String;
+	var spriteSheet : Image;
+
 	var state : GBState;
 
-	var engine : GBEngine;
+	var colors : Array<Color>;
 
 	public function new() {
-		Assets.loadEverything();
-		state = new GBEngine("function _render() \n {str('Hello World.';}", Assets.images.spriteSheet, backBuffer);
+
+		code = "function _render()
+{rect(8,8,8,8);}";
+		backBuffer = Image.createRenderTarget(GB.sw, GB.sh);
+		spriteSheet = Assets.images.spriteSheet;
+
+		state = new GBEngine(code, spriteSheet, backBuffer);
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
+		Keyboard.get().notify(onKeyDown, onKeyUp);
 
 		// 4 colors from GB
 		colors = [
@@ -45,16 +56,37 @@ class GBHandler {
 		framebuffer.g2.end();
 	}
 
-	public function onKeyDown( key:Key ) {
+	public function onKeyDown( key:Key, char:String ) {
 
 		// add conditional modifier
 		switch(char) {
-			case '1': state = new GBEngine(code);
-			case '2': state = CODE;
-			case '3': state = PIXL;
-			case 'r': reset();
-			case 's': save();
-			default: {};
+			case '1': {
+				trace("Switching to game");
+				state = new GBEngine(code, spriteSheet, backBuffer);
+			}
+			case '2': {
+				trace("Switching to code");
+				state = new GBCode(code, backBuffer);
+			}
+			// case '3': state = PIXL;
+			// case 'r': reset();
+			// case 's': save();
+			default: {
+				GB.buttons.push({key:key, char:char});
+			};
+		}
+	}
+
+	public function onKeyUp( key:Key, char:String ) {
+		switch(char) {
+			case '1': {};
+			case '2': {};
+			case '3': {};
+			case 'r': {};
+			case 's': {};
+			default: {
+				GB.buttons.remove({key:key, char:char});
+			};
 		}
 	}
 }
