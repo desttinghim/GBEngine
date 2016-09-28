@@ -13,7 +13,7 @@ import haxe.io.Error;
 class GBEngine implements GBState {
 	public var spriteSheet : Image;
 	public var tileSheet : Image;
-	public var code : Array<String>;
+	public var code : String;
 	var parser : Parser;
 	var interp : Interp;
 	var backBuffer : Image;
@@ -28,7 +28,7 @@ class GBEngine implements GBState {
 
 		// backBuffer of 160 x 144 to match GB resolution
 		this.spriteSheet = spriteSheet;
-		this.code = code.split("\n");
+		this.code = code;
 		this.backBuffer = backBuffer;
 
 		// running script
@@ -42,6 +42,8 @@ class GBEngine implements GBState {
 		interp.variables.set("rect", rect);
 		interp.variables.set("str", str);
 		interp.variables.set("clr", clr);
+		interp.variables.set("btn", btn);
+		interp.variables.set("btnp", btnp);
 
 		reset();
 	}
@@ -49,7 +51,7 @@ class GBEngine implements GBState {
 	public function reset() {
 		trace("Resetting...");
 		try {
-			var ast = parser.parseString(code.join("\n"));
+			var ast = parser.parseString(code);
 			try {
 				interp.execute(ast);
 			}
@@ -113,6 +115,7 @@ class GBEngine implements GBState {
 		for(button in GB.buttons) {
 			return isBtnKeyChar(i, button.key, button.char);
 		}
+		return false;
 	}
 
 	public function btnp(i:Int) {
@@ -120,6 +123,7 @@ class GBEngine implements GBState {
 			if(button.time < lastFrameTime) continue;
 			return isBtnKeyChar(i, button.key, button.char);
 		}
+		return false;
 	}
 
 	public function isBtnKeyChar(i, key:Key, char:String) {
