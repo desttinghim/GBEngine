@@ -33,14 +33,6 @@ class GBHandler {
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
 		Keyboard.get().notify(onKeyDown, onKeyUp);
-
-		// 4 colors from GB
-		colors = [
-			Color.fromBytes(155, 188, 15),
-			Color.fromBytes(139, 172, 15),
-			Color.fromBytes(48, 98, 48),
-			Color.fromBytes(15, 56, 15)
-		];
 	}
 
 	public function update() {
@@ -72,7 +64,7 @@ class GBHandler {
 			// case 'r': reset();
 			// case 's': save();
 			default: {
-				GB.buttons.push({key:key, char:char});
+				GB.buttons.push({key:key, char:char, time:System.time});
 			};
 		}
 	}
@@ -85,7 +77,11 @@ class GBHandler {
 			case 'r': {};
 			case 's': {};
 			default: {
-				GB.buttons.remove({key:key, char:char});
+				for(button in GB.buttons) {
+					if(button.key == key && button.char == char) {
+						GB.buttons.remove(button);
+					}
+				}
 			};
 		}
 	}

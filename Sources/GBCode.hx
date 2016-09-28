@@ -3,6 +3,7 @@ package;
 import kha.Key;
 import kha.Color;
 import kha.Image;
+import kha.System;
 
 import bitmapText.BitmapText;
 
@@ -15,8 +16,8 @@ class GBCode implements GBState {
 	var code : Array<String>;
 	var backBuffer : Image;
 
-	public var cursorColor : Color;
-	public var textColor : Color;
+	public var cursorColor : Color = GB.colors[2];
+	public var textColor : Color = GB.colors[3];
 
 	public function new(c:String, backBuffer:Image) {
 		this.code = c.split("\n");
@@ -24,8 +25,9 @@ class GBCode implements GBState {
 		BitmapText.loadFont('PressStart2P');
 		codeImages = [];
 		for(loc in code) {
-			codeImages.push(new BitmapText(loc, 'PressStart2P', GB.sw, GB.sh));
+			codeImages.push(new BitmapText(loc, 'PressStart2P', GB.sw, 8));
 		}
+		trace(codeImages);
 		codeCursor = {
 			line: code.length-1,
 			col: code[code.length-1].length-1,
@@ -36,28 +38,16 @@ class GBCode implements GBState {
 	public function onKeyDown( key:Key, char:String ) {
 		switch(key) {
 			case UP: {
-				if(codeCursor.line > 0) {
-					codeCursor.line--;
-					if(codeCursor.col > code[codeCursor.line].length) {
-						codeCursor.col = code[codeCursor.line].length;
-					}
-				}
+				moveCursor(-1, 0);
 			}
 			case DOWN: {
-				if(codeCursor.line < code.length-1) {
-					codeCursor.line++;
-					if(codeCursor.col > code[codeCursor.line].length) {
-						codeCursor.col = code[codeCursor.line].length;
-					}
-				}
+				moveCursor(1, 0);
 			}
 			case LEFT: {
-				codeCursor.col--;
-				codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				moveCursor(0, -1);
 			}
 			case RIGHT: {
-				codeCursor.col++;
-				codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+				moveCursor(0, 1);
 			}
 			case BACKSPACE: {
 				var s = spliceStr(code[codeCursor.line], codeCursor.col);
@@ -83,20 +73,28 @@ class GBCode implements GBState {
 
 	}
 
+	var lastButtonCheckTime:Float = 0;
 	public function update() {
 		codeCursor.blink++;
+
+		for(button in GB.buttons) {
+			if(button.time > lastButtonCheckTime) {
+				lastButtonCheckTime = System.time;
+				onKeyDown(button.key, button.char);
+			}
+		}
 	}
 
 	public function render() {
 		var graphics = backBuffer.g2;
 		graphics.begin();
-		for(i in 0...codeImages.length-1) {
-			graphics.color = cursorColor;
-			graphics.drawImage(codeImages[i].image, 0, i * 8);
+		for(i in 0...codeImages.length) {
 			graphics.color = textColor;
-			if(codeCursor.blink % 100 < 50) {
-				graphics.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
-			}
+			graphics.drawImage(codeImages[i].image, 0, i * 8);
+		}
+		if(codeCursor.blink % 100 < 50) {
+			graphics.color = cursorColor;
+			graphics.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
 		}
 		graphics.end();
 	}
@@ -118,5 +116,13 @@ class GBCode implements GBState {
 		codeImages[codeCursor.line].update();
 	}
 
-	// function 
+	function moveCursor(lineRel:Int, colRel:Int) {
+		codeCursor.blink = 0;
+
+		codeCursor.line += lineRel;
+		codeCursor.line = cast Math.min( code.length-1, Math.max(codeCursor.line, 0));
+
+		codeCursor.col += colRel;
+		codeCursor.col = cast Math.min( code[codeCursor.line].length, Math.max(codeCursor.col, 0));
+	}
 }
