@@ -48,17 +48,6 @@ class GBEngine implements GBState {
 		var ast = parser.parseString(code.join("\n"));
 		interp.execute(ast);
 	}
-
-	public function save() {
-		var name = "";
-		if(code[0].charAt(0) == "/" && code[0].charAt(1) == "/") {
-			name = code[0].substr(2);
-		}
-		var file = Storage.namedFile(name);
-		file.writeString(code.join("\n"));
-		trace(file.readString());
-	}
-
 	
 	public function onKeyDown( key:Key, char:String ) {
 

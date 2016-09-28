@@ -11,11 +11,10 @@ import kha.Key;
 import kha.Scaler;
 import kha.Color;
 import kha.input.Keyboard;
+import kha.Storage;
 
 class GBHandler {
 	var backBuffer : Image;
-	var code : String;
-	var spriteSheet : Image;
 
 	var state : GBState;
 
@@ -23,12 +22,12 @@ class GBHandler {
 
 	public function new() {
 
-		code = "function _render()
-{rect(8,8,8,8);}";
+		GB.code = "function _render()
+{rect(8,8,8,8);}".split("\n");
 		backBuffer = Image.createRenderTarget(GB.sw, GB.sh);
-		spriteSheet = Assets.images.spriteSheet;
+		GB.spriteSheet = Assets.images.spriteSheet;
 
-		state = new GBEngine(code, spriteSheet, backBuffer);
+		state = new GBEngine(GB.code.join("\n"), GB.spriteSheet, backBuffer);
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
@@ -48,41 +47,56 @@ class GBHandler {
 		framebuffer.g2.end();
 	}
 
+	var ctrlMod = false;
 	public function onKeyDown( key:Key, char:String ) {
-
+		if (key == CTRL) ctrlMod = true;
 		// add conditional modifier
-		switch(char) {
-			case '1': {
-				trace("Switching to game");
-				state = new GBEngine(code, spriteSheet, backBuffer);
+		if(ctrlMod) {
+			switch(char) {
+				case '1': {
+					trace("Switching to game");
+					state = new GBEngine(GB.code.join("\n"), GB.spriteSheet, backBuffer);
+				}
+				case '2': {
+					trace("Switching to code");
+					state = new GBCode(GB.code, backBuffer);
+				}
+				// case '3': state = PIXL;
+				// case 'r': reset();
+				case 's': save();
+				default: {};
 			}
-			case '2': {
-				trace("Switching to code");
-				state = new GBCode(code, backBuffer);
-			}
-			// case '3': state = PIXL;
-			// case 'r': reset();
-			// case 's': save();
-			default: {
-				GB.buttons.push({key:key, char:char, time:System.time});
-			};
+		} else {
+			GB.buttons.push({key:key, char:char, time:System.time});
 		}
 	}
 
 	public function onKeyUp( key:Key, char:String ) {
-		switch(char) {
-			case '1': {};
-			case '2': {};
-			case '3': {};
-			case 'r': {};
-			case 's': {};
-			default: {
-				for(button in GB.buttons) {
-					if(button.key == key && button.char == char) {
-						GB.buttons.remove(button);
-					}
-				}
-			};
+		if (key == CTRL) ctrlMod = false;
+
+		for(button in GB.buttons) {
+			if(button.key == key && button.char == char) {
+				GB.buttons.remove(button);
+			}
 		}
+	}
+
+	public function save() {
+		var name = "game";
+		if(GB.code[0].charAt(0) == "/" && GB.code[0].charAt(1) == "/") {
+			name = GB.code[0].substr(2);
+		}
+		var file = Storage.namedFile(name);
+		file.writeString(GB.code.join("\n"));
+		trace(file.readString());
+	}
+
+	public function load() {
+		var name = "game";
+		if(GB.code[0].charAt(0) == "/" && GB.code[0].charAt(1) == "/") {
+			name = GB.code[0].substr(2);
+		}
+		var file = Storage.namedFile(name);
+		GB.code = file.readString().split("\n");
 	}
 }
