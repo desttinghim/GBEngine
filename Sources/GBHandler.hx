@@ -22,8 +22,7 @@ class GBHandler {
 
 	public function new() {
 
-		GB.code = "function _render()
-{rect(8,8,8,8);}".split("\n");
+		GB.code = "".split("\n");
 		backBuffer = Image.createRenderTarget(GB.sw, GB.sh);
 		GB.spriteSheet = Assets.images.spriteSheet;
 

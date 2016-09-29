@@ -16,6 +16,8 @@ class GBCode implements GBState {
 	var code : Array<String>;
 	var backBuffer : Image;
 
+	var offsety = 0;
+
 	var bgColor : Color = GB.colors[3];
 	var cursorColor : Color = GB.colors[0];
 	var textColor : Color = GB.colors[0];
@@ -28,7 +30,6 @@ class GBCode implements GBState {
 		for(loc in code) {
 			codeImages.push(new BitmapText(loc, 'PressStart2P', GB.sw, 8));
 		}
-		trace(codeImages);
 		codeCursor = {
 			line: code.length-1,
 			col: code[code.length-1].length-1,
@@ -61,15 +62,16 @@ class GBCode implements GBState {
 				code[codeCursor.line] = s[0];
 				addLine(codeCursor.line+1, s[1]);
 				
-				moveCursor(1, -s[0].length);
+				codeCursor.line++;
+				codeCursor.col = 0;
 			}
 			case BACKSPACE: {
-				if(codeCursor.col == 0) {
-					var s = code.splice(codeCursor.line, 1);
-					trace(s);
-					moveCursor(-1, 0);
-					moveCursor(0, code[codeCursor.line].length);
-					code[codeCursor.line] + s[0];
+				if(codeCursor.col == 0 && codeCursor.line != 0) {
+					var s = code.splice(codeCursor.line-1, 1);
+					codeImages.splice(codeCursor.line-1, 1);
+					codeCursor.line--;
+					codeCursor.col = code[codeCursor.line].length;
+					code[codeCursor.line] = s[0] + code[codeCursor.line];
 
 					//TODO: get string stuff working, remove image
 
@@ -103,6 +105,13 @@ class GBCode implements GBState {
 
 	var lastButtonCheckTime:Float = 0;
 	public function update() {
+		if((codeCursor.line * 8)+offsety >= 144) {
+			offsety -= 80;
+		}
+		else if((codeCursor.line * 8)+offsety < 0) {
+			offsety += 80;
+		}
+
 		codeCursor.blink++;
 
 		for(button in GB.buttons) {
@@ -124,11 +133,11 @@ class GBCode implements GBState {
 
 		for(i in 0...codeImages.length) {
 			graphics.color = textColor;
-			graphics.drawImage(codeImages[i].image, 0, i * 8);
+			graphics.drawImage(codeImages[i].image, 0, i * 8 + offsety);
 		}
 		if(codeCursor.blink % 100 < 50) {
 			graphics.color = cursorColor;
-			graphics.fillRect(codeCursor.col*8, codeCursor.line * 8, 8, 8);
+			graphics.fillRect(codeCursor.col*8, codeCursor.line * 8 + offsety, 8, 8);
 		}
 		graphics.end();
 	}
@@ -185,7 +194,7 @@ class GBCode implements GBState {
 			codeCursor.line -= 1;
 			codeCursor.col += code[codeCursor.line].length;
 		} else if(codeCursor.col > code[codeCursor.line].length && codeCursor.line < code.length-1) {
-			codeCursor.col -= code[codeCursor.line].length;
+			codeCursor.col = 0;
 			codeCursor.line += 1;
 		}
 
